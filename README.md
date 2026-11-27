@@ -1,10 +1,10 @@
-# Animalia v1.5 — Guided Tutorial
+# Animalia
 
-One flat grassy map, one 70-pixel grass block, and two guided lessons. All five older maps remain in their original archives, not this project. No countdown or hazards.
+A charming 2D animal platformer set in a colorful meadow. Play as a hamster, learn agile movement, collect food, and bring it home. The current version (1.5) features an introductory adventure, expressive emotes, Shaman mode, and free practice.
 
 ## Play
 
-Extract the source ZIP into a new folder and open `index.html`, or open the standalone `Animalia_Guided_Tutorial_Play.html` directly in a browser.
+Download or clone this repository and open `index.html` in your browser. For a standalone version, run `python build-standalone.py Animalia_Play.html` and open the generated file.
 
 1. Click Next on the welcome panel.
 2. Walk left for 2 seconds (A), right for 2 seconds (D), and land after jumping at both glowing markers (W). The first marker is on the ground, the second on the block. Walking time counts actual grounded movement, and each marker counts once. Hold W for a higher jump.
@@ -21,13 +21,12 @@ A/D or Left/Right: walk. W: jump (Space and Up no longer jump). Shift: roll. Tab
 
 ## GitHub Pages
 
-1. Create a repository on GitHub.
-2. Upload the extracted source contents (`index.html`, `style.css`, `src`, `assets`, `levels`, `offline.js`, etc.) to its root.
-3. In Settings → Pages, select Deploy from a branch, `main`, `/ (root)`, and Save.
-4. Open the published URL GitHub displays.
+1. Open this repository’s Settings → Pages.
+2. Select Deploy from a branch, `main`, `/ (root)`, and Save.
+3. Open the published URL GitHub displays.
 
-No build step is needed for the supplied project. After editing code or JSON, run `python build-offline.py` to regenerate the offline bundle; run `python build-standalone.py Animalia_Guided_Tutorial_Play.html` to regenerate a single-file version.
+No build step is needed for the supplied project. After editing code or JSON, run `python build-offline.py` to regenerate the offline bundle; run `python build-standalone.py Animalia_Play.html` to regenerate a single-file version.
 
 ## Tests
 
-Run `npm test` with Node.js (no dependencies). Both Classic and Snappy movement presets complete the tutorial, including the two marked landings, reveal sequence, acorn and home. Existing physics and asset tests also run. Optional: install Python Playwright and Chromium, then run `python browser-test.py /path/to/Animalia_Guided_Tutorial_Play.html`. This uses an instrumented in-memory copy with fixed-step advancement; the shipped game has no test hooks. Mobile-sized layout was checked, but real phone performance and touch playtesting remain unverified.
+Run `npm test` with Node.js (no dependencies). Both Classic and Snappy movement presets complete the tutorial, including the two marked landings, reveal sequence, acorn and home. Existing physics and asset tests also run. Optional: install Python Playwright and Chromium, then run `python browser-test.py /path/to/Animalia_Play.html`. This uses an instrumented in-memory copy with fixed-step advancement; the shipped game has no test hooks. Mobile-sized layout was checked, but real phone performance and touch playtesting remain unverified.
