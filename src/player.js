@@ -1,37 +1,46 @@
 import {approach,clamp,moveBody,overlaps,bodyRect,wallContact,wallHasIce} from './physics.js';
-export function spawnPlayer(spawn,scale=1){return {x:spawn.x,y:spawn.y,vx:0,vy:0,w:38*scale,h:43*scale,scale,onGround:false,coyote:0,jumpBuffer:0,jumpActive:false,carrying:false,rolling:false,facing:1,rotation:0,squash:0,walk:0,wallSide:0,wallGrace:0,lastWall:0,wallSliding:false,wallLock:0,groundId:null,vineId:null,vineCooldown:0,vineAngle:0,vineAngularVelocity:0};}
+export function spawnPlayer(spawn,scale=1){return {x:spawn.x,y:spawn.y,vx:0,vy:0,w:38*scale,h:43*scale,scale,onGround:false,coyote:0,jumpBuffer:0,jumpActive:false,carrying:false,rolling:false,facing:1,rotation:0,squash:0,walk:0,wallSide:0,wallGrace:0,lastWall:0,wallSliding:false,wallLock:0,groundId:null,vineId:null,vineCooldown:0,vineAngle:0,vineAngularVelocity:0,vineReleaseReady:false,vineDetached:false};}
 // Pure update: previous state + normalized input + serializable world snapshot + tuning.
 // No canvas, DOM, clock, audio, randomness, or mutation. Returns state and event data.
 export function updatePlayer(previous,input,world,c,dt){
   let p={...previous}; const events=[];
   const direction=Number(input.right)-Number(input.left);
   p.vineCooldown=Math.max(0,(p.vineCooldown||0)-dt);
-  // Automatically catch the vine while airborne. A/D pump the pendulum;
-  // only a fresh W press after attaching releases the hamster.
+  // A latched vine is a separate movement mode. Normal gravity and collisions
+  // cannot detach the hamster. Re-grabbing is blocked until the next landing.
+  if(p.onGround)p.vineDetached=false;
   const vines=world.vines||[];
   const held=p.vineId!=null;
-  let vine=vines.find(v=>v.id===p.vineId);
-  if(!vine&&!p.vineCooldown&&!p.onGround&&!p.rolling){
-    vine=vines.find(v=>Math.hypot(p.x-v.endX,p.y-p.h*.75-v.endY)<c.vineGrabRadius);
+  let vine=held?vines.find(v=>v.id===p.vineId):null;
+  if(!held&&!p.vineDetached&&!p.vineCooldown&&!p.onGround&&!p.rolling){
+    vine=vines.find(v=>Math.hypot(p.x-v.endX,p.y-p.h*.75-v.endY)<=Math.max(c.vineGrabRadius,55));
   }
   if(vine){
     const length=vine.length||145, anchorX=vine.x??vine.endX, anchorY=vine.y??(vine.endY-length);
-    let angle=held?p.vineAngle:(vine.angle||0), omega=held?p.vineAngularVelocity:clamp((vine.angularVelocity||0)+p.vx*Math.cos(angle)/length*.35,-2.8,2.8);
-    const maxAngle=1.04;
-    omega=clamp(omega+(direction*10-7.8*Math.sin(angle)-1.3*omega)*dt,-3.4,3.4);
-    angle+=omega*dt;
-    if(Math.abs(angle)>maxAngle){angle=clamp(angle,-maxAngle,maxAngle);omega*= -.28;}
+    if(!held){
+      p.vineAngle=vine.angle||0;p.vineAngularVelocity=0;
+      p.vineReleaseReady=!input.jump&&!input.jumpPressed;
+      events.push({type:'vineCatch',x:p.x,y:p.y});
+    }
+    // Direct responsive input: A pulls left, D pulls right. No key holds
+    // the current angle; the rope does not swing itself or drop the player.
+    const oldAngle=p.vineAngle, limit=1.02;
+    const target=direction?direction*limit:oldAngle;
+    const angle=approach(oldAngle,target,2.8*dt);
+    const omega=(angle-oldAngle)/dt;
     p.vineAngle=angle;p.vineAngularVelocity=omega;
     p.x=anchorX+Math.sin(angle)*length;p.y=anchorY+Math.cos(angle)*length+p.h*.75;
-    p.vx=0;p.vy=0;p.onGround=false;p.coyote=0;p.groundId=null;p.wallGrace=0;p.lastWall=0;p.wallLock=0;p.wallSliding=false;p.jumpBuffer=0;p.rolling=false;p.jumpActive=false;p.vineId=vine.id;
+    p.vx=p.vy=0;p.onGround=false;p.coyote=0;p.groundId=null;p.wallGrace=0;p.lastWall=0;p.wallLock=0;p.wallSliding=false;p.jumpBuffer=0;p.rolling=false;p.jumpActive=false;p.vineId=vine.id;
     if(direction)p.facing=direction;
-    if(!held||!input.jumpPressed)return {player:p,events};
-    const swingVX=Math.cos(angle)*length*omega, swingVY=-Math.sin(angle)*length*omega;
-    const launchDirection=direction|| (Math.abs(swingVX)>45?Math.sign(swingVX):p.facing);
-    p.vineId=null;p.vineCooldown=.7;p.facing=launchDirection;
-    p.vx=launchDirection*clamp(Math.abs(swingVX)*.65+c.wallJumpPush*.65,c.wallJumpPush*.65,c.wallJumpPush*1.5);
-    p.vy=-c.vineJumpVelocity+Math.min(0,swingVY)*.4;p.jumpActive=true;p.wallLock=.12;
+    if(!input.jump&&!input.jumpPressed)p.vineReleaseReady=true;
+    if(!held||!p.vineReleaseReady||!input.jumpPressed)return {player:p,events};
+    const launchDirection=direction||p.facing;
+    p.vineId=null;p.vineCooldown=.5;p.vineDetached=true;p.vineReleaseReady=false;p.facing=launchDirection;
+    p.vx=launchDirection*clamp(c.wallJumpPush*.75+Math.abs(Math.cos(angle)*length*omega)*.30,180,420);
+    p.vy=-c.vineJumpVelocity;p.jumpActive=true;p.wallLock=.18;p.squash=-.22;
     events.push({type:'jump',x:p.x,y:p.y});
+    // Release once, without running a second jump or re-grab in this tick.
+    return {player:p,events};
   }else p.vineId=null;
   const support=p.onGround?world.platforms.find(b=>b.id!=null&&b.id===p.groundId):null;
   if(support){p.x+=support.dx||0;p.y+=support.dy||0;}

@@ -85,39 +85,48 @@ function wallHasIce(p,platforms,side){return !!side&&platforms.some(b=>b.iceSide
 
 // ===== player.js =====
 
-function spawnPlayer(spawn,scale=1){return {x:spawn.x,y:spawn.y,vx:0,vy:0,w:38*scale,h:43*scale,scale,onGround:false,coyote:0,jumpBuffer:0,jumpActive:false,carrying:false,rolling:false,facing:1,rotation:0,squash:0,walk:0,wallSide:0,wallGrace:0,lastWall:0,wallSliding:false,wallLock:0,groundId:null,vineId:null,vineCooldown:0,vineAngle:0,vineAngularVelocity:0};}
+function spawnPlayer(spawn,scale=1){return {x:spawn.x,y:spawn.y,vx:0,vy:0,w:38*scale,h:43*scale,scale,onGround:false,coyote:0,jumpBuffer:0,jumpActive:false,carrying:false,rolling:false,facing:1,rotation:0,squash:0,walk:0,wallSide:0,wallGrace:0,lastWall:0,wallSliding:false,wallLock:0,groundId:null,vineId:null,vineCooldown:0,vineAngle:0,vineAngularVelocity:0,vineReleaseReady:false,vineDetached:false};}
 // Pure update: previous state + normalized input + serializable world snapshot + tuning.
 // No canvas, DOM, clock, audio, randomness, or mutation. Returns state and event data.
 function updatePlayer(previous,input,world,c,dt){
   let p={...previous}; const events=[];
   const direction=Number(input.right)-Number(input.left);
   p.vineCooldown=Math.max(0,(p.vineCooldown||0)-dt);
-  // Automatically catch the vine while airborne. A/D pump the pendulum;
-  // only a fresh W press after attaching releases the hamster.
+  // A latched vine is a separate movement mode. Normal gravity and collisions
+  // cannot detach the hamster. Re-grabbing is blocked until the next landing.
+  if(p.onGround)p.vineDetached=false;
   const vines=world.vines||[];
   const held=p.vineId!=null;
-  let vine=vines.find(v=>v.id===p.vineId);
-  if(!vine&&!p.vineCooldown&&!p.onGround&&!p.rolling){
-    vine=vines.find(v=>Math.hypot(p.x-v.endX,p.y-p.h*.75-v.endY)<c.vineGrabRadius);
+  let vine=held?vines.find(v=>v.id===p.vineId):null;
+  if(!held&&!p.vineDetached&&!p.vineCooldown&&!p.onGround&&!p.rolling){
+    vine=vines.find(v=>Math.hypot(p.x-v.endX,p.y-p.h*.75-v.endY)<=Math.max(c.vineGrabRadius,55));
   }
   if(vine){
     const length=vine.length||145, anchorX=vine.x??vine.endX, anchorY=vine.y??(vine.endY-length);
-    let angle=held?p.vineAngle:(vine.angle||0), omega=held?p.vineAngularVelocity:clamp((vine.angularVelocity||0)+p.vx*Math.cos(angle)/length*.35,-2.8,2.8);
-    const maxAngle=1.04;
-    omega=clamp(omega+(direction*10-7.8*Math.sin(angle)-1.3*omega)*dt,-3.4,3.4);
-    angle+=omega*dt;
-    if(Math.abs(angle)>maxAngle){angle=clamp(angle,-maxAngle,maxAngle);omega*= -.28;}
+    if(!held){
+      p.vineAngle=vine.angle||0;p.vineAngularVelocity=0;
+      p.vineReleaseReady=!input.jump&&!input.jumpPressed;
+      events.push({type:'vineCatch',x:p.x,y:p.y});
+    }
+    // Direct responsive input: A pulls left, D pulls right. No key holds
+    // the current angle; the rope does not swing itself or drop the player.
+    const oldAngle=p.vineAngle, limit=1.02;
+    const target=direction?direction*limit:oldAngle;
+    const angle=approach(oldAngle,target,2.8*dt);
+    const omega=(angle-oldAngle)/dt;
     p.vineAngle=angle;p.vineAngularVelocity=omega;
     p.x=anchorX+Math.sin(angle)*length;p.y=anchorY+Math.cos(angle)*length+p.h*.75;
-    p.vx=0;p.vy=0;p.onGround=false;p.coyote=0;p.groundId=null;p.wallGrace=0;p.lastWall=0;p.wallLock=0;p.wallSliding=false;p.jumpBuffer=0;p.rolling=false;p.jumpActive=false;p.vineId=vine.id;
+    p.vx=p.vy=0;p.onGround=false;p.coyote=0;p.groundId=null;p.wallGrace=0;p.lastWall=0;p.wallLock=0;p.wallSliding=false;p.jumpBuffer=0;p.rolling=false;p.jumpActive=false;p.vineId=vine.id;
     if(direction)p.facing=direction;
-    if(!held||!input.jumpPressed)return {player:p,events};
-    const swingVX=Math.cos(angle)*length*omega, swingVY=-Math.sin(angle)*length*omega;
-    const launchDirection=direction|| (Math.abs(swingVX)>45?Math.sign(swingVX):p.facing);
-    p.vineId=null;p.vineCooldown=.7;p.facing=launchDirection;
-    p.vx=launchDirection*clamp(Math.abs(swingVX)*.65+c.wallJumpPush*.65,c.wallJumpPush*.65,c.wallJumpPush*1.5);
-    p.vy=-c.vineJumpVelocity+Math.min(0,swingVY)*.4;p.jumpActive=true;p.wallLock=.12;
+    if(!input.jump&&!input.jumpPressed)p.vineReleaseReady=true;
+    if(!held||!p.vineReleaseReady||!input.jumpPressed)return {player:p,events};
+    const launchDirection=direction||p.facing;
+    p.vineId=null;p.vineCooldown=.5;p.vineDetached=true;p.vineReleaseReady=false;p.facing=launchDirection;
+    p.vx=launchDirection*clamp(c.wallJumpPush*.75+Math.abs(Math.cos(angle)*length*omega)*.30,180,420);
+    p.vy=-c.vineJumpVelocity;p.jumpActive=true;p.wallLock=.18;p.squash=-.22;
     events.push({type:'jump',x:p.x,y:p.y});
+    // Release once, without running a second jump or re-grab in this tick.
+    return {player:p,events};
   }else p.vineId=null;
   const support=p.onGround?world.platforms.find(b=>b.id!=null&&b.id===p.groundId):null;
   if(support){p.x+=support.dx||0;p.y+=support.dy||0;}
@@ -364,7 +373,7 @@ function debugText(s,fps,steps){const p=s.player;return ['ANIMALIA / SIM 60 Hz',
 // Fixed-step tutorial progress, independent of the renderer and DOM.
 const WALK_SECONDS=2;
 const REVEAL_SECONDS=5.4;
-const TERRAIN_TASKS=[{"id":"vine","label":"Vine","hint":"Jump to catch it. A/D swing; W jumps off."},{"id":"grass","label":"Grass","hint":"Walk on normal ground."},{"id":"ice","label":"Ice","hint":"Slippery! Watch your momentum."},{"id":"spring","label":"Trampoline","hint":"Bounce high on the purple pad."},{"id":"chocolate","label":"Chocolate","hint":"Sticky ground slows you down."},{"id":"wood","label":"Wood","hint":"Walk on solid wooden ground."}];
+const TERRAIN_TASKS=[{"id":"vine","label":"Vine","hint":"Jump to catch it. Stay attached, hold A/D to swing, then press W again to jump off."},{"id":"grass","label":"Grass","hint":"Walk on normal ground."},{"id":"ice","label":"Ice","hint":"Slippery! Watch your momentum."},{"id":"spring","label":"Trampoline","hint":"Bounce high on the purple pad."},{"id":"chocolate","label":"Chocolate","hint":"Sticky ground slows you down."},{"id":"wood","label":"Wood","hint":"Walk on solid wooden ground."}];
 function createTutorial(level){return {phase:level?.terrainLesson?'terrain-intro':'intro',terrainDone:{},vineGrabbed:false,left:0,right:0,jumps:[false,false],airborneJump:false,revealTime:0,foodVisible:false,holeVisible:false};}
 function advanceTutorial(t,level,prev,p,input,events,dt){
   if(t.phase!=='controls')return;
@@ -449,7 +458,7 @@ function createUI(actions){const $=id=>document.getElementById(id);let toastTime
       for(const [id,label,done] of [['taskLeft','A · Walk left  '+time(t.left)+' / 2s',t.left>=2-1e-8],['taskRight','D · Walk right  '+time(t.right)+' / 2s',t.right>=2-1e-8],['taskJump','W · Jump at the markers  '+count+' / 2',count===2]]){const el=$(id);el.textContent=(done?'✓  ':'○  ')+label;el.classList.toggle('done',done);}
       dialog.hidden=!(s.status==='playing'&&(phase==='intro'||phase==='complete')&&!menus.some(id=>!$(id).hidden));
       $('tutorialStep').textContent=phase==='complete'?'TUTORIAL 01 COMPLETE':'TUTORIAL 01';$('tutorialTitle').textContent=phase==='complete'?'You did it!':'Welcome to Animalia!';$('tutorialText').textContent=phase==='complete'?'You brought the golden acorn home! Next, discover vines and the different surfaces in the meadow.':'Learn to walk left and right, then jump at two glowing markers. Your first adventure awaits!';$('tutorialNext').textContent=phase==='complete'?'Next · Tutorial 02 →':'Next →';
-      const terrain=s.levelId==='tutorial-02',terrainIntro=phase==='terrain-intro',terrainComplete=phase==='terrain-complete';$('terrainGuide').hidden=!(terrain&&terrainIntro);$('terrainTasks').hidden=!(terrain&&phase==='terrain');if(terrain){const count=TERRAIN_TASKS.filter(q=>t.terrainDone[q.id]).length;$('timer').textContent='MEADOW DISCOVERY';$('runInfo').textContent=count+' / 6 discovered';$('questIcon').textContent='✿';$('quest').textContent=terrainComplete||phase==='free'?'Meadow mastered!':'Discover the meadow';$('questSub').textContent=terrainIntro?'Press Next to explore.':terrainComplete||phase==='free'?'You tried every material!':'Try the vine and every surface.';document.querySelector('.quest small').textContent='TASK';$('hamsterHint').textContent='W jump/catch · A/D swing · W release';for(const q of TERRAIN_TASKS){const el=$('terrain-task-'+q.id),done=!!t.terrainDone[q.id];el.textContent=(done?'✓ ':'○ ')+q.label;el.classList.toggle('done',done);}dialog.hidden=!(s.status==='playing'&&(terrainIntro||terrainComplete)&&!menus.some(id=>!$(id).hidden));$('tutorialStep').textContent=terrainComplete?'TUTORIAL 02 COMPLETE':'TUTORIAL 02 · DISCOVERY';$('tutorialTitle').textContent=terrainComplete?'Meadow mastered!':'New task: Explore the meadow';$('tutorialText').textContent=terrainComplete?'You discovered all six meadow features. Now you can explore freely!':'Try each feature below to complete your next adventure.';$('tutorialNext').textContent=terrainComplete?'Next · Free practice →':'Next · Explore →';}
+      const terrain=s.levelId==='tutorial-02',terrainIntro=phase==='terrain-intro',terrainComplete=phase==='terrain-complete';$('terrainGuide').hidden=!(terrain&&terrainIntro);$('terrainTasks').hidden=!(terrain&&phase==='terrain');if(terrain){const count=TERRAIN_TASKS.filter(q=>t.terrainDone[q.id]).length;$('timer').textContent='MEADOW DISCOVERY';$('runInfo').textContent=count+' / 6 discovered';$('questIcon').textContent='✿';$('quest').textContent=terrainComplete||phase==='free'?'Meadow mastered!':'Discover the meadow';$('questSub').textContent=terrainIntro?'Press Next to explore.':terrainComplete||phase==='free'?'You tried every material!':'Try the vine and every surface.';document.querySelector('.quest small').textContent='TASK';$('hamsterHint').textContent=s.player.vineId!=null?(s.player.vineReleaseReady?'A/D swing · W jump off':'Attached! Release W first · A/D swing'):'W jump to grab · A/D swing';if(phase==='terrain'&&s.player.vineId!=null)$('questSub').textContent='Hold A or D to swing. Press W again to jump off.';for(const q of TERRAIN_TASKS){const el=$('terrain-task-'+q.id),done=!!t.terrainDone[q.id];el.textContent=(done?'✓ ':'○ ')+q.label;el.classList.toggle('done',done);}dialog.hidden=!(s.status==='playing'&&(terrainIntro||terrainComplete)&&!menus.some(id=>!$(id).hidden));$('tutorialStep').textContent=terrainComplete?'TUTORIAL 02 COMPLETE':'TUTORIAL 02 · DISCOVERY';$('tutorialTitle').textContent=terrainComplete?'Meadow mastered!':'New task: Explore the meadow';$('tutorialText').textContent=terrainComplete?'You discovered all six meadow features. Now you can explore freely!':'Try each feature below to complete your next adventure.';$('tutorialNext').textContent=terrainComplete?'Next · Free practice →':'Next · Explore →';}
  $('revealCaption').hidden=phase!=='reveal'||s.status!=='playing';$('revealCaption').textContent=t.revealTime<.7?'Great work!':t.revealTime<1.65?'A golden acorn appeared!':t.revealTime<2.6?'Where will you take it?':t.revealTime<3.55?'Your hamster hole!':'Collect the acorn and bring it home.';
     }if(s.status!==lastStatus){lastStatus=s.status;$('nextTrail').hidden=s.status!=='won';$('roundRecap').hidden=s.status!=='won';if(s.status==='won'&&s.award){$('awardStars').textContent='★'.repeat(s.award.medals)+'☆'.repeat(3-s.award.medals);$('awardStats').textContent=`+${s.award.xp} XP · ${s.falls} falls · ${s.finish.toFixed(2)}s`;$('awardHint').textContent=s.assisted?'Clear earned · use no magic or mid-run tuning for bonus medals':`Speed medal ≤ ${s.award.target}s · Clean medal: zero falls`;}$('overlay').hidden=s.status==='playing';const data={paused:['☾','Paused','The forest can wait.','Resume'],won:['🏆','You Win!',s.newRecord?'New record! '+s.finish.toFixed(2)+' seconds.':'Completed in '+s.finish.toFixed(2)+' seconds.','Play again'],lost:['⌛','Time’s Up!','Another adventure awaits.','Try again']}[s.status];if(data){$('modalMark').textContent=data[0];$('modalTitle').textContent=data[1];$('modalText').textContent=data[2];$('modalPrimary').textContent=data[3];}}},debugVisible:()=>$('debug').hidden===false,debugText:t=>$('debug').textContent=t};}
 
@@ -623,7 +632,7 @@ async function boot(){let level=await loadLevel();const bg=createBackground();le
     elapsed+=STEP;state.time=level.practice?config.roundSeconds:Math.max(0,config.roundSeconds-elapsed);if(!level.practice&&state.time<=0){state.status='lost';ui.closeChat();ui.update(state);return;}updateShaman(state.shaman,config,STEP);state.stage=stepStage(state.stage,level,state.player,config,STEP);const raw=input.sample();const result=updatePlayer(state.player,state.mode==='hamster'?raw:emptyInput(),worldFor(level,state.shaman,config,state.stage),config,STEP);state.player=result.player;state.bubble=tickBubble(state.bubble,STEP);const p=state.player;if(capture){captureReplay(capture,p,elapsed);if(replayKey(level.id,config)!==ghostKey)state.assisted=true;}
     // Tiny speed-dependent foot puffs make rapid movement readable without altering collision.
     if(p.onGround&&Math.abs(p.vx)>config.maxSpeed*.55&&Math.round(elapsed/STEP)%9===0&&quality!=='low')burst(particles,'dust',p.x-p.facing*10*(p.scale||1),p.y-2,2);
-    for(const ev of result.events){audio.play(ev.type);burst(particles,'dust',ev.x,ev.y,ev.type==='land'?12:7);if(ev.type==='land'&&ev.impact>420)cam.shake=(cam.fixed?0:config.shakeStrength)*Math.min(1,ev.impact/650);}
+    for(const ev of result.events){if(ev.type==='vineCatch'){audio.play('pickup');ui.showToast('Vine grabbed! Hold A or D to swing. Release W, then press W to jump off.');continue;}audio.play(ev.type);burst(particles,'dust',ev.x,ev.y,ev.type==='land'?12:7);if(ev.type==='land'&&ev.impact>420)cam.shake=(cam.fixed?0:config.shakeStrength)*Math.min(1,ev.impact/650);}
     if(p.wallSliding&&Math.floor(elapsed/STEP)%7===0)burst(particles,'dust',p.x+p.wallSide*17,p.y-12,2);
     if(p.y>level.height+50||level.hazards.some(h=>overlaps(bodyRect(p),h))){respawn();return;}
     if(level.practice){
@@ -652,7 +661,7 @@ async function boot(){let level=await loadLevel();const bg=createBackground();le
       Object.assign(cam,revealPose(state.tutorial.revealTime,revealStart,p,level,cssW,cssH,baseScale));cam.width=cssW/cam.scale;cam.height=cssH/cam.scale;cam.shake=0;
     }else{if(revealStart){Object.assign(cam,revealPose(5.4,revealStart,p,level,cssW,cssH,baseScale));cam.width=cssW/cam.scale;cam.height=cssH/cam.scale;revealStart=null;}updateCamera(cam,p,level,config,dt);}
     ctx.setTransform(dpr,0,0,dpr,0,0);bg(ctx,cssW,cssH,cam,visualTime,level,p,quality);ctx.save();ctx.scale(cam.scale,cam.scale);ctx.translate(-cam.x+Math.sin(visualTime*75)*cam.shake,-cam.y+Math.cos(visualTime*62)*cam.shake*.6);
-    for(const b of level.platforms)if(b.motion&&b.x+b.w+Math.abs(b.motion.x||0)>cam.x-80&&b.x-Math.abs(b.motion.x||0)<cam.x+cam.width+80&&b.y+b.h+Math.abs(b.motion.y||0)>cam.y-80&&b.y-Math.abs(b.motion.y||0)<cam.y+cam.height+80)drawObstacleGuide(ctx,b);for(const b of state.stage.platforms)if(b.x+b.w>cam.x-80&&b.x<cam.x+cam.width+80&&b.y+b.h>cam.y-80&&b.y<cam.y+cam.height+80){const drawn={...b,x:b.x-(b.dx||0)*(1-alpha),y:b.y-(b.dy||0)*(1-alpha)};terrain(ctx,drawn,visualTime);drawCrumbleWarning(ctx,drawn);}for(const b of state.stage.debris){ctx.save();ctx.globalAlpha=Math.max(0,1-b.fallAge/.75);ctx.translate(0,b.fallAge*b.fallAge*480);terrain(ctx,b,visualTime);ctx.restore();}for(const v of state.stage.vines){const held=state.player.vineId===v.id;drawVine(ctx,held?{...v,endX:p.x,endY:p.y-p.h*.75}:v);}for(const q of level.checkpoints||[]){if(level.camera==='overview'){ctx.save();ctx.translate(q.x,q.y);ctx.scale(.55,.55);ctx.translate(-q.x,-q.y);drawCheckpoint(ctx,q,q.id===state.stage.checkpoint?.id,visualTime);ctx.restore();}else drawCheckpoint(ctx,q,q.id===state.stage.checkpoint?.id,visualTime);}for(const b of level.hazards)drawHazard(ctx,b);for(const o of state.shaman.objects)magic(ctx,o,visualTime);if(!level.practice||state.tutorial?.foodVisible||state.tutorial?.holeVisible){if(!level.practice||state.tutorial?.holeVisible){if(level.playerScale){mazeHole(ctx,level.hole.x,level.hole.floor,state.player.carrying,visualTime);}else hole(ctx,level.hole.x,level.hole.y,state.player.carrying,visualTime);}if((!level.practice||state.tutorial?.foodVisible)&&!state.player.carrying&&state.tutorial?.phase!=='free'){ctx.save();ctx.translate(level.acorn.x,level.acorn.y);ctx.scale(level.playerScale||1,level.playerScale||1);acorn(ctx,0,0,visualTime);ctx.restore();}}if(showRoute&&level.route){ctx.save();ctx.setLineDash([5,5]);line(ctx,level.route,'#fff0a4',2.5);if(level.wallRoute){ctx.setLineDash([2,6]);line(ctx,level.wallRoute,'#9de7ff',1.6);}ctx.setLineDash([]);ctx.restore();}
+    for(const b of level.platforms)if(b.motion&&b.x+b.w+Math.abs(b.motion.x||0)>cam.x-80&&b.x-Math.abs(b.motion.x||0)<cam.x+cam.width+80&&b.y+b.h+Math.abs(b.motion.y||0)>cam.y-80&&b.y-Math.abs(b.motion.y||0)<cam.y+cam.height+80)drawObstacleGuide(ctx,b);for(const b of state.stage.platforms)if(b.x+b.w>cam.x-80&&b.x<cam.x+cam.width+80&&b.y+b.h>cam.y-80&&b.y<cam.y+cam.height+80){const drawn={...b,x:b.x-(b.dx||0)*(1-alpha),y:b.y-(b.dy||0)*(1-alpha)};terrain(ctx,drawn,visualTime);drawCrumbleWarning(ctx,drawn);}for(const b of state.stage.debris){ctx.save();ctx.globalAlpha=Math.max(0,1-b.fallAge/.75);ctx.translate(0,b.fallAge*b.fallAge*480);terrain(ctx,b,visualTime);ctx.restore();}for(const v of state.stage.vines){const held=state.player.vineId===v.id;drawVine(ctx,held?{...v,endX:p.x,endY:p.y-p.h*.75}:v);if(held){ctx.save();ctx.font='bold 13px sans-serif';ctx.textAlign='center';const label='A  ◀    SWING    ▶  D   ·   W  RELEASE';const w=ctx.measureText(label).width+22;rounded(ctx,p.x-w/2,p.y-105,w,25,7,'#543b42','#f5d5a0');ctx.fillStyle='#fff1d0';ctx.fillText(label,p.x,p.y-88);ctx.restore();}}for(const q of level.checkpoints||[]){if(level.camera==='overview'){ctx.save();ctx.translate(q.x,q.y);ctx.scale(.55,.55);ctx.translate(-q.x,-q.y);drawCheckpoint(ctx,q,q.id===state.stage.checkpoint?.id,visualTime);ctx.restore();}else drawCheckpoint(ctx,q,q.id===state.stage.checkpoint?.id,visualTime);}for(const b of level.hazards)drawHazard(ctx,b);for(const o of state.shaman.objects)magic(ctx,o,visualTime);if(!level.practice||state.tutorial?.foodVisible||state.tutorial?.holeVisible){if(!level.practice||state.tutorial?.holeVisible){if(level.playerScale){mazeHole(ctx,level.hole.x,level.hole.floor,state.player.carrying,visualTime);}else hole(ctx,level.hole.x,level.hole.y,state.player.carrying,visualTime);}if((!level.practice||state.tutorial?.foodVisible)&&!state.player.carrying&&state.tutorial?.phase!=='free'){ctx.save();ctx.translate(level.acorn.x,level.acorn.y);ctx.scale(level.playerScale||1,level.playerScale||1);acorn(ctx,0,0,visualTime);ctx.restore();}}if(showRoute&&level.route){ctx.save();ctx.setLineDash([5,5]);line(ctx,level.route,'#fff0a4',2.5);if(level.wallRoute){ctx.setLineDash([2,6]);line(ctx,level.wallRoute,'#9de7ff',1.6);}ctx.setLineDash([]);ctx.restore();}
     if(state.tutorial?.phase==='controls')for(const [i,m] of level.jumpTargets.entries()){
       const done=state.tutorial.jumps[i],pulse=Math.sin(visualTime*4+i)*3;ctx.save();ctx.globalAlpha=done?.55:1;ellipse(ctx,m.x,m.y-3,Math.min(m.radius,37),7,done?'#bde9a2aa':'#ffe49caa');ctx.translate(m.x,m.y-90+pulse);rounded(ctx,-23,-13,46,25,9,done?'#b7d18b':'#ffe1a0','#805944');ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillStyle='#624538';ctx.fillText(done?'✓':'W · '+(i+1),0,4);line(ctx,[[0,14],[0,23]],'#ffe4ab',2);line(ctx,[[-5,19],[0,24],[5,19]],'#ffe4ab',2);ctx.restore();
     }
