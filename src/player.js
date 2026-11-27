@@ -1,0 +1,53 @@
+import {approach,clamp,moveBody,overlaps,bodyRect,wallContact,wallHasIce} from './physics.js';
+export function spawnPlayer(spawn,scale=1){return {x:spawn.x,y:spawn.y,vx:0,vy:0,w:38*scale,h:43*scale,scale,onGround:false,coyote:0,jumpBuffer:0,jumpActive:false,carrying:false,rolling:false,facing:1,rotation:0,squash:0,walk:0,wallSide:0,wallGrace:0,lastWall:0,wallSliding:false,wallLock:0,groundId:null,vineId:null,vineCooldown:0};}
+// Pure update: previous state + normalized input + serializable world snapshot + tuning.
+// No canvas, DOM, clock, audio, randomness, or mutation. Returns state and event data.
+export function updatePlayer(previous,input,world,c,dt){
+  let p={...previous}; const events=[];
+  const direction=Number(input.right)-Number(input.left);
+  p.vineCooldown=Math.max(0,(p.vineCooldown||0)-dt);
+  const vines=world.vines||[];
+  let vine=vines.find(v=>v.id===p.vineId);
+  if(!vine&&input.grab&&!p.vineCooldown&&!p.onGround)vine=vines.find(v=>Math.hypot(p.x-v.endX,p.y-p.h*.75-v.endY)<c.vineGrabRadius);
+  if(vine){p.x=vine.endX;p.y=vine.endY+p.h*.75;p.vx=0;p.vy=0;p.onGround=false;p.coyote=0;p.groundId=null;p.wallGrace=0;p.lastWall=0;p.wallLock=0;p.wallSliding=false;p.jumpBuffer=0;p.rolling=false;p.vineId=vine.id;if(!input.jumpPressed)return {player:p,events};p.vineId=null;p.vineCooldown=.45;p.vx=(direction||p.facing)*c.wallJumpPush;p.vy=-c.vineJumpVelocity;p.jumpActive=true;p.wallLock=.12;events.push({type:'jump',x:p.x,y:p.y});}
+  else p.vineId=null;
+  const support=p.onGround?world.platforms.find(b=>b.id!=null&&b.id===p.groundId):null;
+  if(support){p.x+=support.dx||0;p.y+=support.dy||0;}
+  else if(p.onGround&&p.groundId!=null)p.onGround=false;
+  p.coyote=p.onGround?c.coyoteTime:Math.max(0,p.coyote-dt);
+  p.jumpBuffer=input.jumpPressed?Math.max(c.jumpBufferTime,dt):Math.max(0,p.jumpBuffer-dt);
+  p.wallLock=Math.max(0,(p.wallLock||0)-dt);
+  const contact=wallContact(p,world.platforms,c.wallCheckDistance);
+  if(p.onGround){p.wallGrace=0;p.lastWall=0;}
+  else if(contact&&!p.wallLock){p.wallGrace=c.wallCoyoteTime;p.lastWall=contact;}
+  else p.wallGrace=Math.max(0,(p.wallGrace||0)-dt);
+  p.rolling=!!input.roll&&!p.wallLock;if(direction&&!p.wallLock)p.facing=direction;
+  const roll=p.rolling&&p.onGround;const speed=c.maxSpeed*(p.carrying?c.carrySpeedMultiplier:1)*(roll?c.rollSpeedMultiplier:1)*(support?.kind==='honey'?c.honeySpeed:1);
+  const accel=(p.onGround?c.acceleration:c.airAcceleration)*(p.rolling?c.rollTurnMultiplier:1)*(support?.kind==='ice'?.32:1);
+  if(!p.wallLock)p.vx=approach(p.vx,direction*speed,(direction?accel:p.onGround?(support?.kind==='ice'?c.iceFriction:c.groundFriction)*(roll?.35:1):(c.airDrag||c.airAcceleration*.18))*dt);
+  for(const f of world.fans){if(overlaps(bodyRect(p),f.area))p.vx=clamp(p.vx+f.direction*c.windAcceleration*dt,-speed*1.8,speed*1.8);}
+  if(p.jumpBuffer>0&&(p.onGround||p.coyote>0)){p.vy=-c.jumpVelocity;p.onGround=false;p.coyote=0;p.jumpBuffer=0;p.jumpActive=true;p.squash=-0.32;events.push({type:'jump',x:p.x,y:p.y});}
+  else if(p.jumpBuffer>0&&!p.onGround&&!p.wallLock&&!p.rolling&&(contact||p.wallGrace>0)){
+    const side=contact||p.lastWall;p.vx=-side*c.wallJumpPush;p.vy=-c.wallJumpVelocity;
+    p.facing=-side;p.wallLock=c.wallJumpLock;p.wallGrace=0;p.lastWall=0;p.jumpBuffer=0;
+    p.jumpActive=true;p.squash=-.25;p.wallSliding=false;events.push({type:'wallJump',x:p.x,y:p.y-15});
+  }
+  // Legacy instant cut and optional variable-gravity jump are mutually exclusive.
+  // Springs keep their full upward launch (jumpActive is false for spring events).
+  if((input.jumpReleased||!input.jump)&&p.jumpActive&&p.vy<0&&c.jumpCutMultiplier<1){p.vy*=c.jumpCutMultiplier;p.jumpActive=false;}
+  const gravityScale=p.vy>0?c.fallGravityMult:p.vy<0&&p.jumpActive&&!input.jump?c.lowJumpGravityMult:1;
+  p.vy=Math.min(c.maxFallSpeed,p.vy+c.gravity*gravityScale*dt);if(p.vy>=0)p.jumpActive=false;
+  if(!p.onGround&&!p.wallLock&&!p.rolling&&contact&&direction===contact&&p.vy>0)p.vy=Math.min(p.vy,c.wallSlideSpeed*(wallHasIce(p,world.platforms,contact)?1.6:1));
+  const wasGround=p.onGround;const belt=support?.kind==='conveyor'?(support.direction||1)*c.conveyorSpeed:0;
+  const hit=moveBody({...p,vx:p.vx+belt},dt,world.platforms);if(!hit.hitWall)hit.vx-=belt;Object.assign(p,hit);
+  p.wallSide=wallContact(p,world.platforms,c.wallCheckDistance);
+  p.wallSliding=!p.onGround&&!p.wallLock&&!p.rolling&&p.wallSide!==0&&direction===p.wallSide&&p.vy>0;
+  if(p.wallSliding)p.vy=Math.min(p.vy,c.wallSlideSpeed*(wallHasIce(p,world.platforms,p.wallSide)?1.6:1));
+  if(p.onGround){p.wallLock=0;p.wallGrace=0;p.lastWall=0;}
+
+  if(hit.sprung){p.coyote=0;p.jumpActive=false;p.squash=-.35;events.push({type:'spring',x:p.x,y:p.y});}
+  else if(!wasGround&&p.onGround&&hit.impact>100){p.squash=Math.min(.38,hit.impact/1700);events.push({type:'land',x:p.x,y:p.y,impact:hit.impact});}
+  p.squash=approach(p.squash,0,dt*2.6);p.walk+=Math.abs(p.vx)*dt/25;if(p.rolling)p.rotation+=p.vx*dt/20;else p.rotation=0;
+  const edge=p.scale<1?p.w/2:20;if(p.x<edge){p.x=edge;p.vx=0;}if(p.x>world.width-edge){p.x=world.width-edge;p.vx=0;}
+  return {player:p,events};
+}

@@ -1,0 +1,8 @@
+import {overlaps,bodyRect} from './physics.js';
+export const TOOLS=[{id:'cheese',name:'Cheese',icon:'🧀',cost:24,w:130,h:28,life:6,description:'Solid ledge · lasts 6 seconds'},{id:'spring',name:'Spring',icon:'↟',cost:22,w:72,h:18,life:12,description:'Launches your hamster · lasts 12 seconds'},{id:'fan',name:'Fan',icon:'✺',cost:28,w:45,h:50,life:10,description:'Pushes sideways · faces your last direction'},{id:'ramp',name:'Ramp',icon:'◢',cost:32,w:160,h:78,life:8,description:'Walkable slope · lasts 8 seconds'}];
+export const createShaman=()=>({mana:100,selected:0,objects:[],nextId:1});
+export function previewObject(state,x,y,facing=1){const t=TOOLS[state.selected];return {...t,x:Math.round((x-t.w/2)/5)*5,y:Math.round((y-t.h/2)/5)*5,direction:facing,remaining:t.life,kind:t.id};}
+export function canPlace(s,o,level,player){if(s.mana<o.cost||o.x<0||o.x+o.w>level.width||o.y<25||o.y+o.h>level.height-20)return false;if(o.kind==='fan')return true; if(overlaps(o,bodyRect(player)))return false;return ![...level.platforms,...s.objects.filter(v=>v.kind!=='fan')].some(b=>overlaps(o,b));}
+export function placeObject(s,o,level,p){if(!canPlace(s,o,level,p))return false;s.mana-=o.cost;s.objects.push({...o,id:s.nextId++});return true;}
+export function updateShaman(s,c,dt){s.mana=Math.min(100,s.mana+c.manaRegen*dt);s.objects=s.objects.map(o=>({...o,remaining:o.remaining-dt})).filter(o=>o.remaining>0);}
+export function worldFor(level,s,c,stage){return {width:level.width,vines:stage?.vines||[],platforms:[...(stage?.platforms||level.platforms),...s.objects.filter(o=>o.kind!=='fan').map(o=>({...o,id:`magic-${o.id}`,bounce:c.springVelocity}))],fans:s.objects.filter(o=>o.kind==='fan').map(o=>({...o,area:{x:o.direction>0?o.x:o.x-230,y:o.y-70,w:275,h:130}}))};}
