@@ -58,7 +58,13 @@ with sync_playwright() as pw:
         page.locator('[data-slot="carrot:0"]').click()
         for _ in range(5):
             page.locator('[data-action=sell]').click()
+        expect(page.locator('#levelName')).to_have_text('Home',timeout=15000)
         expect(page.locator('#coinBalance')).to_have_text('50')
+        page.locator('#gamemodesToggle').click()
+        expect(page.locator('#gamemodesMenu')).to_be_visible()
+        page.locator('#modeUtility').click()
+        expect(page.locator('#utilityPlaces')).to_be_visible()
+        page.locator('#closeGamemodes').click()
         page.locator('#shopToggle').click()
         page.locator('[data-category=cosmetics]').click()
         page.locator('[data-buy=item][data-item=shirt]').click()

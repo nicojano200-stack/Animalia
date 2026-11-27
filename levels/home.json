@@ -1,0 +1,27 @@
+{
+  "id": "home",
+  "name": "Home",
+  "theme": "My Meadow",
+  "practice": true,
+  "homeArea": true,
+  "width": 1600,
+  "height": 540,
+  "spawn": {
+    "x": 500,
+    "y": 390
+  },
+  "platforms": [
+    {
+      "id": "ground",
+      "x": 0,
+      "y": 390,
+      "w": 1600,
+      "h": 150,
+      "kind": "grass"
+    }
+  ],
+  "hazards": [],
+  "checkpoints": [],
+  "vines": [],
+  "signs": []
+}

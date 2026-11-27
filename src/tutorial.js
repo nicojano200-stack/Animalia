@@ -6,7 +6,7 @@ import {STEP} from './config.js';
 export const WALK_SECONDS=2;
 export const REVEAL_SECONDS=5.4;
 export const TERRAIN_TASKS=[{"id":"vine","label":"Vine","hint":"Jump to catch it. Stay attached, hold A/D to swing, then press W again to jump off."},{"id":"grass","label":"Grass","hint":"Walk on normal ground."},{"id":"ice","label":"Ice","hint":"Slippery! Watch your momentum."},{"id":"spring","label":"Trampoline","hint":"Bounce high on the purple pad."},{"id":"chocolate","label":"Chocolate","hint":"Sticky ground slows you down."},{"id":"wood","label":"Wood","hint":"Walk on solid wooden ground."}];
-export function createTutorial(level){return {phase:level?.farmLesson?'farm':level?.wallLesson?'wall-intro':level?.terrainLesson?'terrain-intro':'intro',wallJumps:0,demoTime:0,terrainDone:{},vineGrabbed:false,left:0,right:0,jumps:[false,false],airborneJump:false,revealTime:0,foodVisible:!!level?.wallLesson,holeVisible:!!level?.wallLesson};}
+export function createTutorial(level){return {phase:level?.homeArea?'home':level?.farmLesson?'farm':level?.wallLesson?'wall-intro':level?.terrainLesson?'terrain-intro':'intro',wallJumps:0,demoTime:0,terrainDone:{},vineGrabbed:false,left:0,right:0,jumps:[false,false],airborneJump:false,revealTime:0,foodVisible:!!level?.wallLesson,holeVisible:!!level?.wallLesson};}
 export function advanceTutorial(t,level,prev,p,input,events,dt){
   if(t.phase!=='controls')return;
   const dx=p.x-prev.x;

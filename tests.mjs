@@ -36,7 +36,7 @@ const {createStage,stepStage,checkpointAt,recordTime,bestTime}=await import('./s
 const {makeBubble,tickBubble,wrapBubble}=await import('./src/bubbles.js');
 const {filterChat}=await import('./src/emotes.js');
 const fs=await import('node:fs/promises');
-for(const [i,file] of ['tutorial-01','tutorial-02','tutorial-03','tutorial-04'].entries())assert.deepEqual(LEVELS[i],JSON.parse(await fs.readFile(new URL('./levels/'+file+'.json',import.meta.url),'utf8')));
+for(const [i,file] of ['tutorial-01','tutorial-02','tutorial-03','tutorial-04','home'].entries())assert.deepEqual(LEVELS[i],JSON.parse(await fs.readFile(new URL('./levels/'+file+'.json',import.meta.url),'utf8')));
 let testLevel={width:1200,platforms:[{id:'move',x:100,y:300,w:160,h:20,oneWay:true,kind:'moving',motion:{x:40,y:35,period:2}},{id:'crumble',x:420,y:300,w:120,h:20,kind:'crumble',oneWay:true}],vines:[],checkpoints:[{x:480,y:300,id:'flag'}]};
 let stage=createStage(testLevel),rider={...spawnPlayer({x:180,y:300}),onGround:true,groundId:'move'};
 for(let i=0;i<150;i++){stage=stepStage(stage,testLevel,rider,c,STEP);rider=step(rider,idle,worldFor(testLevel,createShaman(),c,stage));const moving=stage.platforms[0];assert(rider.onGround,'moving platform retained rider');assert(Math.abs(rider.x-moving.x-80)<.01);assert(Math.abs(rider.y-moving.y)<.01);}
