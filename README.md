@@ -33,3 +33,6 @@ Run `npm test` with Node.js (no dependencies). Both Classic and Snappy movement 
 
 ## Tutorial 04 — Little Farmer
 After wall jumping, the guided shop opens. Character selection is a placeholder; cosmetics and fur options can be purchased with coins. Buy five free carrot seeds individually, choose garden plots, wait five real minutes per plant, harvest and sell for ten coins each. After the starter lesson, additional seeds cost three coins. Farm progress is stored in the browser; no account or server sync is included.
+
+## Woodland UI and inventory
+The Canvas game retains all four lessons. The market uses a striped canopy, custom SVG icons, a CSS-spinning coin, progress bars and a responsive 20-slot backpack. Seeds, carrots, cosmetics, fur and three optional meadow resources share the existing local save. Stacks hold 99; legacy overflow remains visible and new items are blocked when full. Characters remain a placeholder. No multiplayer server is included.
