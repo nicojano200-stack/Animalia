@@ -51,6 +51,7 @@ export function createFarmUI(actions){
  el('inventorySort').onchange=e=>{sort=e.target.value;lastKey='';render(actions.state());};
  el('inventorySlots').onclick=e=>{const b=e.target.closest('[data-slot]');if(b){selected=b.dataset.slot;lastKey='';render(actions.state());}};
  el('inventoryDetails').onclick=e=>{const b=e.target.closest('[data-action]');if(!b)return;if(b.dataset.action==='useSeed'){open(garden);render(actions.state());}else transact(b.dataset.action,b.dataset.item);};
+ window.addEventListener('resize',()=>{if(innerWidth<1050&&!shop.hidden&&!inventory.hidden)close(inventory);});
  window.addEventListener('keydown',e=>{if(e.code==='Escape'&&isOpen()){e.preventDefault();e.stopImmediatePropagation();close();}},true);
  function render(f){
   const active=actions.active(),stage=farmStage(f),guide=active&&stage==='shop-guide';
@@ -58,7 +59,7 @@ export function createFarmUI(actions){
   el('economyBar').hidden=!active;el('shopGuide').hidden=!guide;shopButton.classList.toggle('guided',guide);el('coinBalance').textContent=f.coins;el('shopBalance').textContent=f.coins;el('gardenToggle').disabled=stage==='shop-guide'||stage==='buy';el('inventoryToggle').disabled=guide;
   if(!active){if(isOpen())close();return;}
   // Only rebuild interactive cards when their data changes. Crop timers update separately.
-  if(!garden.hidden)for(const b of el('gardenPlots').querySelectorAll('[data-plot]')){const p=f.plots[Number(b.dataset.plot)],n=farmRemaining(p);if(p&&n){b.querySelector('small').textContent=farmClock(n);}else if(p&&b.disabled&&n===0){lastKey='';}}
+  if(!garden.hidden)for(const b of el('gardenPlots').querySelectorAll('[data-plot]')){const p=f.plots[Number(b.dataset.plot)],n=farmRemaining(p);if(p&&n){const clock=farmClock(n),label=b.querySelector('small');if(label.textContent!==clock)label.textContent=clock;}else if(p&&b.disabled&&n===0){lastKey='';}}
   const key=JSON.stringify([f,tab,filter,sort,selected,...panels.map(p=>p.hidden)]);if(lastKey===key)return;lastKey=key;
   const coin='<i class="paw-coin"></i>';
   if(!shop.hidden){

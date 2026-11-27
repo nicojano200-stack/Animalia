@@ -20,6 +20,14 @@ jobs:
       - uses: actions/checkout@v4
       - name: Test the game
         run: npm test
+      - name: Install browser smoke test tools
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Test the game UI in Chromium
+        run: |
+          python -m http.server 8765 > /tmp/animalia-server.log 2>&1 &
+          python ui-smoke.py http://127.0.0.1:8765/
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
@@ -36,3 +44,10 @@ jobs:
       - name: Deploy Animalia
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Verify published website in Chromium
+        run: |
+          for attempt in 1 2 3; do
+            python ui-smoke.py "https://nicojano200-stack.github.io/Animalia/?build=${GITHUB_SHA}" && exit 0
+            sleep 10
+          done
+          exit 1
