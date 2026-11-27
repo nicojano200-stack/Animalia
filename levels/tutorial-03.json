@@ -1,0 +1,64 @@
+{
+  "id": "tutorial-03",
+  "name": "Tutorial 03",
+  "theme": "Wall Jump",
+  "difficulty": "Easy",
+  "practice": true,
+  "wallLesson": true,
+  "width": 960,
+  "height": 790,
+  "spawn": {
+    "x": 480,
+    "y": 680
+  },
+  "platforms": [
+    {
+      "id": "ground",
+      "x": 0,
+      "y": 680,
+      "w": 960,
+      "h": 110,
+      "kind": "grass"
+    },
+    {
+      "id": "left-wall",
+      "x": 280,
+      "y": 225,
+      "w": 130,
+      "h": 455,
+      "kind": "wall"
+    },
+    {
+      "id": "right-wall",
+      "x": 550,
+      "y": 225,
+      "w": 130,
+      "h": 455,
+      "kind": "wall"
+    }
+  ],
+  "hazards": [],
+  "checkpoints": [],
+  "vines": [],
+  "signs": [
+    {
+      "x": 480,
+      "y": 225,
+      "label": "ACORN SUMMIT"
+    },
+    {
+      "x": 200,
+      "y": 680,
+      "label": "WALL JUMP"
+    }
+  ],
+  "acorn": {
+    "x": 480,
+    "y": 200
+  },
+  "hole": {
+    "x": 480,
+    "y": 634,
+    "floor": 680
+  }
+}

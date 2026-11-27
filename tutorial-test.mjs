@@ -5,9 +5,9 @@ import {spawnPlayer,updatePlayer} from './src/player.js';
 import {emptyInput} from './src/input.js';
 import {createShaman,worldFor} from './src/shaman.js';
 import {acornReached,homeReached} from './src/parkour.js';
-import {createTutorial,advanceTutorial,advanceReveal,revealPose,advanceTerrain,TERRAIN_TASKS} from './src/tutorial.js';
+import {createTutorial,advanceTutorial,advanceReveal,revealPose,advanceTerrain,TERRAIN_TASKS,buildWallDemo,wallDemoFrame,advanceWallLesson} from './src/tutorial.js';
 const level=await loadLevel();
-assert.deepEqual(LEVEL_FILES,['tutorial-01','tutorial-02']);assert.equal(LEVELS.length,2);assert(level.practice);assert.equal(level.platforms.length,2);assert.equal(level.hazards.length,0);
+assert.deepEqual(LEVEL_FILES,['tutorial-01','tutorial-02','tutorial-03']);assert.equal(LEVELS.length,3);assert(level.practice);assert.equal(level.platforms.length,2);assert.equal(level.hazards.length,0);
 for(const mode of ['classic','snappy']){
  const cfg={...DEFAULT_CONFIG};applyMovementPreset(cfg,mode);let p=spawnPlayer(level.spawn);const world=worldFor(level,createShaman(),cfg);const t=createTutorial();assert(!t.foodVisible&&!t.holeVisible);t.phase='controls';
  const step=(i={})=>{const raw={...emptyInput(),...i},old=p,result=updatePlayer(p,raw,world,cfg,STEP);p=result.player;advanceTutorial(t,level,old,p,raw,result.events,STEP);};
@@ -31,3 +31,6 @@ for(const mode of ['classic','snappy']){
  tick();for(let j=0;j<70&&p.vineId==null;j++)tick({jump:true,jumpPressed:j===0});assert(p.vineId!=null,'automatic vine catch '+mode+' '+JSON.stringify(p));const caughtX=p.x;for(let j=0;j<120;j++)tick({jump:true});assert(p.vineId!=null&&Math.abs(p.x-caughtX)<.01,'held W cannot release or drift');for(let j=0;j<24;j++)tick({left:true});assert(p.vineId!=null&&p.x<caughtX-25,'A swings left');const leftX=p.x;for(let j=0;j<48;j++)tick({right:true});assert(p.vineId!=null&&p.x>leftX+40,'D swings right');const rightX=p.x;for(let j=0;j<120;j++)tick();assert(p.vineId!=null&&Math.abs(p.x-rightX)<.01,'idle stays attached');tick({jump:true,jumpPressed:true,right:true});assert(task.terrainDone.vine&&p.vineId==null,'W releases vine');for(let j=0;j<20;j++){tick({right:true});assert(p.vineId==null,'no regrab after release');}
  for(let j=0;j<850&&task.phase!=='terrain-complete';j++)tick({right:true});assert.equal(task.phase,'terrain-complete',mode+' '+JSON.stringify({task,p}));assert(TERRAIN_TASKS.every(q=>task.terrainDone[q.id]));console.log('PASS: '+mode+' meadow discovery: all six features.');
 }
+
+const wall=await loadLevel('tutorial-03');assert(wall.wallLesson);assert.equal(wall.hole.x,wall.spawn.x);assert.equal(wall.hole.floor,wall.spawn.y);
+for(const mode of ['classic','snappy']){const cfg={...DEFAULT_CONFIG};applyMovementPreset(cfg,mode);const demo=buildWallDemo(wall,cfg);assert(demo.jumps>=2&&demo.got&&demo.done,mode+' '+JSON.stringify({jumps:demo.jumps,got:demo.got,done:demo.done,last:demo.frames.at(-1)}));assert(wallDemoFrame(demo,0));const lesson=createTutorial(wall);assert.equal(lesson.phase,'wall-intro');lesson.phase='wall-quest';let prevJumps=0,player=spawnPlayer(wall.spawn),pickup=false;for(const frame of demo.frames){player={...frame.p,carrying:player.carrying};const events=frame.jumps>prevJumps?[{type:'wallJump'}]:[];prevJumps=frame.jumps;const event=advanceWallLesson(lesson,wall,player,events);if(event==='pickup')pickup=true;}assert(pickup);assert.equal(lesson.phase,'wall-complete');console.log('PASS: '+mode+' wall-jump ghost demonstrates '+demo.jumps+' kicks, acorn and home.');}
