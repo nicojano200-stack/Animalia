@@ -5,9 +5,9 @@ import {spawnPlayer,updatePlayer} from './src/player.js';
 import {emptyInput} from './src/input.js';
 import {createShaman,worldFor} from './src/shaman.js';
 import {acornReached,homeReached} from './src/parkour.js';
-import {createTutorial,advanceTutorial,advanceReveal,revealPose} from './src/tutorial.js';
+import {createTutorial,advanceTutorial,advanceReveal,revealPose,advanceTerrain,TERRAIN_TASKS} from './src/tutorial.js';
 const level=await loadLevel();
-assert.deepEqual(LEVEL_FILES,['tutorial-01']);assert.equal(LEVELS.length,1);assert(level.practice);assert.equal(level.platforms.length,2);assert.equal(level.hazards.length,0);
+assert.deepEqual(LEVEL_FILES,['tutorial-01','tutorial-02']);assert.equal(LEVELS.length,2);assert(level.practice);assert.equal(level.platforms.length,2);assert.equal(level.hazards.length,0);
 for(const mode of ['classic','snappy']){
  const cfg={...DEFAULT_CONFIG};applyMovementPreset(cfg,mode);let p=spawnPlayer(level.spawn);const world=worldFor(level,createShaman(),cfg);const t=createTutorial();assert(!t.foodVisible&&!t.holeVisible);t.phase='controls';
  const step=(i={})=>{const raw={...emptyInput(),...i},old=p,result=updatePlayer(p,raw,world,cfg,STEP);p=result.player;advanceTutorial(t,level,old,p,raw,result.events,STEP);};
@@ -21,4 +21,13 @@ for(const mode of ['classic','snappy']){
  for(let j=0;j<220&&!p.carrying;j++){step({right:true});if(acornReached(level,p))p.carrying=true;}assert(p.carrying,JSON.stringify(p));
  // Walk back, jump over the one grass block and carry the acorn home.
  let jumped=false;for(let j=0;j<650&&!homeReached(level,p);j++){const launch=!jumped&&p.x<1320&&p.onGround;if(launch)jumped=true;step({left:true,jump:jumped&&p.x>1050,jumpPressed:launch});}assert(homeReached(level,p),JSON.stringify(p));console.log('PASS: '+mode+' full tutorial: walk timers, two jump targets, reveal, acorn, home.');
+}
+
+const meadow=await loadLevel('tutorial-02');assert(meadow.terrainLesson);assert.equal(meadow.platforms.length,5);assert.equal(meadow.vines.length,1);
+const {createStage,stepStage}=await import('./src/parkour.js');
+for(const mode of ['classic','snappy']){
+ const cfg={...DEFAULT_CONFIG};applyMovementPreset(cfg,mode);const task=createTutorial(meadow);assert.equal(task.phase,'terrain-intro');task.phase='terrain';let stage=createStage(meadow),p=spawnPlayer(meadow.spawn);const shaman=createShaman();
+ const tick=(i={})=>{const raw={...emptyInput(),...i},old=p;stage=stepStage(stage,meadow,p,cfg,STEP);const result=updatePlayer(p,raw,worldFor(meadow,shaman,cfg,stage),cfg,STEP);p=result.player;advanceTerrain(task,old,p,raw,result.events);};
+ tick();for(let j=0;j<70&&p.vineId==null;j++)tick({jump:true,jumpPressed:j===0,grab:true});assert(p.vineId!=null,'vine reachable '+mode+' '+JSON.stringify(p));tick({jump:true,jumpPressed:true,right:true});assert(task.terrainDone.vine,'vine release');
+ for(let j=0;j<850&&task.phase!=='terrain-complete';j++)tick({right:true});assert.equal(task.phase,'terrain-complete',mode+' '+JSON.stringify({task,p}));assert(TERRAIN_TASKS.every(q=>task.terrainDone[q.id]));console.log('PASS: '+mode+' meadow discovery: all six features.');
 }

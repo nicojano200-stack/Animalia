@@ -9,7 +9,7 @@ Download or clone this repository and open `index.html` in your browser. For a s
 1. Click Next on the welcome panel.
 2. Walk left for 2 seconds (A), right for 2 seconds (D), and land after jumping at both glowing markers (W). The first marker is on the ground, the second on the block. Walking time counts actual grounded movement, and each marker counts once. Hold W for a higher jump.
 3. After all tasks, the game temporarily locks movement and performs a 5.4-second camera reveal: golden acorn, hamster hole, then back to the player. Both objects are hidden until their reveal.
-4. Collect the golden acorn and carry it to the hamster hole. A completion panel and confetti appear; Next returns you to unlimited free practice. Press R to redo the tutorial.
+4. Collect the golden acorn and carry it to the hamster hole. A completion panel and confetti appear; Click Next to enter Tutorial 02: Meadow Discovery. Grab and release the vine, then try grass, ice, the purple trampoline, chocolate and wood. Finish all six tasks to unlock free practice. Press R to restart the current lesson.
 
 ## Controls
 

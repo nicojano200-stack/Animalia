@@ -1,0 +1,102 @@
+{
+  "id": "tutorial-02",
+  "name": "Tutorial 02",
+  "theme": "Meadow Discovery",
+  "difficulty": "Easy",
+  "practice": true,
+  "terrainLesson": true,
+  "width": 1900,
+  "height": 540,
+  "spawn": {
+    "x": 250,
+    "y": 390
+  },
+  "platforms": [
+    {
+      "id": "grass",
+      "x": 0,
+      "y": 390,
+      "w": 540,
+      "h": 150,
+      "kind": "grass"
+    },
+    {
+      "id": "ice",
+      "x": 540,
+      "y": 390,
+      "w": 360,
+      "h": 150,
+      "kind": "ice"
+    },
+    {
+      "id": "spring",
+      "x": 900,
+      "y": 390,
+      "w": 120,
+      "h": 150,
+      "kind": "spring",
+      "style": "purple"
+    },
+    {
+      "id": "chocolate",
+      "x": 1020,
+      "y": 390,
+      "w": 400,
+      "h": 150,
+      "kind": "honey",
+      "style": "chocolate"
+    },
+    {
+      "id": "wood",
+      "x": 1420,
+      "y": 390,
+      "w": 480,
+      "h": 150,
+      "kind": "wood",
+      "style": "bare"
+    }
+  ],
+  "hazards": [],
+  "checkpoints": [],
+  "vines": [
+    {
+      "x": 250,
+      "y": 115,
+      "length": 145,
+      "amplitude": 0.11,
+      "period": 3
+    }
+  ],
+  "signs": [
+    {
+      "x": 250,
+      "y": 390,
+      "label": "VINE · W + E"
+    },
+    {
+      "x": 420,
+      "y": 390,
+      "label": "GRASS"
+    },
+    {
+      "x": 720,
+      "y": 390,
+      "label": "ICE"
+    },
+    {
+      "x": 960,
+      "y": 390,
+      "label": "BOUNCE!"
+    },
+    {
+      "x": 1220,
+      "y": 390,
+      "label": "CHOCOLATE"
+    },
+    {
+      "x": 1650,
+      "y": 390,
+      "label": "WOOD"
+    }
+  ]
+}
