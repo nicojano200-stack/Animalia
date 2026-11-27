@@ -33,14 +33,25 @@ with sync_playwright() as pw:
         else:
             expect(page.locator('#shopPanel')).to_be_hidden()
         page.locator('[data-slot="seed:0"]').click()
+        page.locator('[data-action=equipSeed]').click()
         page.locator('[data-action=useSeed]').click()
         expect(page.locator('#gardenPanel')).to_be_visible()
         for i in range(5):
             page.locator(f'[data-plot="{i}"]').click()
+            expect(page.locator('#inventoryPanel')).to_be_visible()
+            expect(page.locator('#seedPickerHint')).to_contain_text(f'Plot {i+1}')
+            page.locator('[data-slot="seed:0"]').click()
+            page.locator('[data-action=plantEquipped]').click()
+            expect(page.locator('#gardenPanel')).to_be_visible()
         expect(page.locator('#gardenInventory')).to_contain_text('0 seeds')
-        page.evaluate("""() => {const k='animalia.farm.v1', f=JSON.parse(localStorage.getItem(k));for(const p of f.plots)p.readyAt=Date.now()-1;localStorage.setItem(k,JSON.stringify(f));}""")
+        expect(page.locator('[data-skip]')).to_have_count(5)
+        page.locator('[data-skip="0"]').click()
+        expect(page.locator('[data-skip]')).to_have_count(4)
+        # Reload preserves the crop and its free-skip eligibility.
         enter_farm(page)
         page.locator('#gardenToggle').click()
+        for i in range(1,5):
+            page.locator(f'[data-skip="{i}"]').click()
         for i in range(5):
             page.locator(f'[data-plot="{i}"]').click()
         page.locator('#inventoryToggle').click()

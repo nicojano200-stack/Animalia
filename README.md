@@ -36,3 +36,5 @@ After wall jumping, the guided shop opens. Character selection is a placeholder;
 
 ## Woodland UI and inventory
 The Canvas game retains all four lessons. The market uses a striped canopy, custom SVG icons, a CSS-spinning coin, progress bars and a responsive 20-slot backpack. Seeds, carrots, cosmetics, fur and three optional meadow resources share the existing local save. Stacks hold 99; legacy overflow remains visible and new items are blocked when full. Characters remain a placeholder. No multiplayer server is included.
+
+Click empty soil (world or Garden) to open the seed-filtered backpack. Select carrot seed, Equip, then Plant 1 seed in the chosen plot. The five starter crops can use Free skip in Garden; subsequent crops require the full five minutes. Existing in-progress starter crops are migrated automatically.

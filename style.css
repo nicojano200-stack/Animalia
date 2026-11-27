@@ -50,3 +50,5 @@
 /* Keep narrow portrait HUD rows separated and preserve a clear map viewport. */
 @media(min-width:1050px) and (min-height:650px){.economy-panel{top:calc(50% + 46px);max-height:calc(100% - 215px)}}
 @media(max-width:480px) and (min-height:600px){.top .round{top:54px;left:50%;width:148px!important}.quest{top:124px!important}.mode-panel{top:124px!important;right:8px}.farm-hud #economyBar{top:124px;left:50%;right:auto;transform:translateX(-50%)}.farm-hud .quest{top:180px!important}.farm-hud .mode-panel{top:180px!important}.economy-panel{top:55%;max-height:65vh}.economy-open .quest{visibility:hidden}.economy-open .mode-panel{visibility:hidden}}
+
+.plot-cell{display:grid;gap:5px;min-width:0;align-content:start}.plot-cell .garden-plot{width:100%}.free-skip{font-size:10px;padding:5px 2px;color:#3c5123!important;background:linear-gradient(#e2f2ad,#9dc458)!important;border-color:#e7f1b4!important;text-shadow:none!important}.seed-picker-hint{background:#4d3929;border:1px solid #c8a55c;border-radius:9px;padding:8px;color:#ffe6a2!important;font-weight:bold}.garden-plot[data-growing=true]{opacity:1!important}
