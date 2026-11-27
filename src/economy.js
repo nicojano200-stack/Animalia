@@ -9,10 +9,15 @@ export const SHOP_ITEMS=[
  {id:'cream',category:'fur',slot:'fur',name:'Cream fur',icon:'●',price:35,color:'#f6e7c6'},
  {id:'brown',category:'fur',slot:'fur',name:'Cocoa fur',icon:'●',price:35,color:'#946747'},
  {id:'gold',category:'fur',slot:'fur',name:'Golden fur',icon:'●',price:45,color:'#e8b85d'}];
-export function newFarm(){return {coins:0,seeds:0,starterBought:0,carrots:0,sold:0,planted:0,harvested:0,shopSeen:false,plots:[null,null,null,null,null],owned:[],equipped:{},resources:{},collected:[],decorOwned:{},homeDecor:[]};}
-export function loadFarm(storage){try{const raw=JSON.parse(storage.getItem('animalia.farm.v1')||'null');if(raw&&Array.isArray(raw.plots)&&raw.plots.length===5)return {...newFarm(),...raw,plots:raw.plots.map(p=>p?{...p,starter:p.starter??(raw.sold<5)}:null)};}catch{}return newFarm();}
+export function newFarm(){return {coins:0,seeds:0,starterBought:0,carrots:0,sold:0,planted:0,harvested:0,shopSeen:false,plots:[null,null,null,null,null],owned:[],equipped:{},resources:{},collected:[],decorOwned:{},homeDecor:[],tutorialStep:0};}
+export function loadFarm(storage){try{const raw=JSON.parse(storage.getItem('animalia.farm.v1')||'null');if(raw&&Array.isArray(raw.plots)&&raw.plots.length===5)return {...newFarm(),...raw,tutorialStep:Number.isInteger(raw.tutorialStep)?Math.max(0,Math.min(4,raw.tutorialStep)):(farmStage(raw)==='done'?4:0),plots:raw.plots.map(p=>p?{...p,starter:p.starter??(raw.sold<5)}:null)};}catch{}return newFarm();}
 export function saveFarm(storage,f){try{storage.setItem('animalia.farm.v1',JSON.stringify(f));}catch{}}
 export function farmStage(f){return !f.shopSeen?'shop-guide':f.starterBought<5?'buy':f.planted<5?'plant':f.harvested<5?'grow':f.sold<5?'sell':'done';}
+export const ONBOARDING_LEVELS=['tutorial-01','tutorial-02','tutorial-03','tutorial-04','home'];
+export function onboardingDone(f){return f.tutorialStep===4&&farmStage(f)==='done';}
+export function onboardingLevel(f){return ONBOARDING_LEVELS[onboardingDone(f)?4:Math.min(3,Math.max(0,f.tutorialStep||0))];}
+export function canEnterOnboarding(f,id){return onboardingDone(f)?ONBOARDING_LEVELS.includes(id):id===onboardingLevel(f);}
+export function completeOnboardingLesson(f,id){const i=ONBOARDING_LEVELS.indexOf(id);if(i<0||i>3||i!==f.tutorialStep||i===3&&farmStage(f)!=='done')return false;f.tutorialStep=i+1;return true;}
 export const INVENTORY_CAPACITY=20, STACK_SIZE=99;
 export const RESOURCE_ITEMS=[{id:'wood',name:'Wood',category:'resources',price:2,x:170},{id:'stone',name:'Stone',category:'resources',price:3,x:540},{id:'leaf',name:'Meadow leaf',category:'resources',price:2,x:1280}];
 export const DECOR_ITEMS=[{id:'flowerpot',name:'Flower pot',category:'decor',price:10},{id:'bench',name:'Wooden bench',category:'decor',price:20},{id:'lantern',name:'Garden lantern',category:'decor',price:15}];

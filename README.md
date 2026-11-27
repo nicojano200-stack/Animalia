@@ -41,3 +41,6 @@ Click empty soil (world or Garden) to open the seed-filtered backpack. Select ca
 
 ## Home and Gamemodes
 After selling the five tutorial carrots, players enter their own initially empty meadow. Completed saves start at Home. Decorations cost coins, can be placed on grass or returned to the bag, and persist locally. Garden travel remains available. Racing and Utility (Hotel, House, Restaurant) are placeholders; Hide and Seek and Guess the Impostor are coming soon. No maps or multiplayer services are added for these modes.
+
+### Continuous onboarding
+New players start at Tutorial 01. Only the current lesson is accessible until all four are completed; completing a lesson saves the next checkpoint. The fifth carrot sale unlocks Home automatically, and future sessions start there. Previously completed farming saves migrate to Home without losing items. Tutorial replay and garden travel are available after onboarding.

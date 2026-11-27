@@ -5,8 +5,7 @@ url=sys.argv[1] if len(sys.argv)>1 else 'http://127.0.0.1:8765/'
 def enter_farm(page):
     page.goto(url,wait_until='domcontentloaded',timeout=60000)
     expect(page.locator('#loading')).to_be_hidden(timeout=20000)
-    page.locator('#levelToggle').click()
-    page.locator('#levelChoices button').filter(has_text='Tutorial 04').click()
+    expect(page.locator('#levelName')).to_have_text('Tutorial 04')
     expect(page.locator('#economyBar')).to_be_visible(timeout=15000)
 def no_overlap(a,b):
     return a['x']+a['width']<=b['x']+2 or b['x']+b['width']<=a['x']+2 or a['y']+a['height']<=b['y']+2 or b['y']+b['height']<=a['y']+2
@@ -16,6 +15,14 @@ with sync_playwright() as pw:
         page=browser.new_page(viewport={'width':width,'height':height})
         errors=[]
         page.on('pageerror',lambda e:errors.append(str(e)))
+        # Fresh players begin at lesson one and cannot select a later map.
+        page.goto(url,wait_until='domcontentloaded',timeout=60000)
+        expect(page.locator('#loading')).to_be_hidden(timeout=20000)
+        expect(page.locator('#levelName')).to_have_text('Tutorial 01')
+        expect(page.locator('#levelToggle')).to_be_hidden()
+        expect(page.locator('#gamemodesToggle')).to_be_hidden()
+        # Seed a prior-three-lessons checkpoint to test the full farming UI.
+        page.evaluate("""async () => { const {newFarm}=await import('./src/economy.js'); const f=newFarm(); f.tutorialStep=3; localStorage.setItem('animalia.farm.v1',JSON.stringify(f)); }""")
         enter_farm(page)
         expect(page.locator('#shopGuide')).to_be_visible()
         page.locator('#shopToggle').click()
@@ -76,6 +83,10 @@ with sync_playwright() as pw:
         page.locator('[data-action=item]').click()
         page.keyboard.press('Escape')
         expect(page.locator('#inventoryPanel')).to_be_hidden()
+        page.reload(wait_until='domcontentloaded')
+        expect(page.locator('#loading')).to_be_hidden(timeout=20000)
+        expect(page.locator('#levelName')).to_have_text('Home')
+        expect(page.locator('#coinBalance')).to_have_text('30')
         assert no_overlap(page.locator('.brand').bounding_box(),page.locator('.round').bounding_box()),'brand/round overlap'
         assert no_overlap(page.locator('.quest').bounding_box(),page.locator('#economyBar').bounding_box()),'quest/economy overlap'
         assert not errors,errors
