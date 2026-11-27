@@ -1,0 +1,56 @@
+{
+  "id": "tutorial-04",
+  "name": "Tutorial 04",
+  "theme": "Little Farmer",
+  "difficulty": "Easy",
+  "practice": true,
+  "farmLesson": true,
+  "width": 1400,
+  "height": 540,
+  "spawn": {
+    "x": 420,
+    "y": 390
+  },
+  "platforms": [
+    {
+      "id": "ground",
+      "x": 0,
+      "y": 390,
+      "w": 1400,
+      "h": 150,
+      "kind": "grass"
+    }
+  ],
+  "hazards": [],
+  "checkpoints": [],
+  "vines": [],
+  "signs": [
+    {
+      "x": 420,
+      "y": 390,
+      "label": "LITTLE FARMER"
+    }
+  ],
+  "farmPlots": [
+    {
+      "x": 620,
+      "y": 390
+    },
+    {
+      "x": 745,
+      "y": 390
+    },
+    {
+      "x": 870,
+      "y": 390
+    },
+    {
+      "x": 995,
+      "y": 390
+    },
+    {
+      "x": 1120,
+      "y": 390
+    }
+  ]
+}

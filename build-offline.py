@@ -3,9 +3,9 @@ from pathlib import Path
 import re,json
 root=Path(__file__).resolve().parent
 level=root/'src/level.js'
-maps=[json.loads((root/'levels'/f'{name}.json').read_text()) for name in ['tutorial-01','tutorial-02','tutorial-03']]
+maps=[json.loads((root/'levels'/f'{name}.json').read_text()) for name in ['tutorial-01','tutorial-02','tutorial-03','tutorial-04']]
 level.write_text(re.sub(r'/\* MAP_DATA_START \*/.*?/\* MAP_DATA_END \*/',lambda _: '/* MAP_DATA_START */ '+json.dumps(maps,separators=(',',':'))+' /* MAP_DATA_END */',level.read_text(),flags=re.S))
-order='config input physics player level parkour adventure shaman camera emotes chat bubbles background audio particles debug tutorial ui sprites main'.split()
+order='config input physics player level parkour adventure shaman camera emotes chat bubbles background audio particles debug tutorial economy ui sprites main'.split()
 parts=[]
 for name in order:
     s=(root/'src'/f'{name}.js').read_text()

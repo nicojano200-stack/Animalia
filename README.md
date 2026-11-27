@@ -30,3 +30,6 @@ No build step is needed for the supplied project. After editing code or JSON, ru
 ## Tests
 
 Run `npm test` with Node.js (no dependencies). Both Classic and Snappy movement presets complete the tutorial, including the two marked landings, reveal sequence, acorn and home. Existing physics and asset tests also run. Optional: install Python Playwright and Chromium, then run `python browser-test.py /path/to/Animalia_Play.html`. This uses an instrumented in-memory copy with fixed-step advancement; the shipped game has no test hooks. Mobile-sized layout was checked, but real phone performance and touch playtesting remain unverified.
+
+## Tutorial 04 — Little Farmer
+After wall jumping, the guided shop opens. Character selection is a placeholder; cosmetics and fur options can be purchased with coins. Buy five free carrot seeds individually, choose garden plots, wait five real minutes per plant, harvest and sell for ten coins each. After the starter lesson, additional seeds cost three coins. Farm progress is stored in the browser; no account or server sync is included.
