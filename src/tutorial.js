@@ -1,7 +1,7 @@
 // Fixed-step tutorial progress, independent of the renderer and DOM.
 export const WALK_SECONDS=2;
 export const REVEAL_SECONDS=5.4;
-export const TERRAIN_TASKS=[{"id":"vine","label":"Vine","hint":"Jump and hold E to grab; W to release."},{"id":"grass","label":"Grass","hint":"Walk on normal ground."},{"id":"ice","label":"Ice","hint":"Slippery! Watch your momentum."},{"id":"spring","label":"Trampoline","hint":"Bounce high on the purple pad."},{"id":"chocolate","label":"Chocolate","hint":"Sticky ground slows you down."},{"id":"wood","label":"Wood","hint":"Walk on solid wooden ground."}];
+export const TERRAIN_TASKS=[{"id":"vine","label":"Vine","hint":"Jump to catch it. A/D swing; W jumps off."},{"id":"grass","label":"Grass","hint":"Walk on normal ground."},{"id":"ice","label":"Ice","hint":"Slippery! Watch your momentum."},{"id":"spring","label":"Trampoline","hint":"Bounce high on the purple pad."},{"id":"chocolate","label":"Chocolate","hint":"Sticky ground slows you down."},{"id":"wood","label":"Wood","hint":"Walk on solid wooden ground."}];
 export function createTutorial(level){return {phase:level?.terrainLesson?'terrain-intro':'intro',terrainDone:{},vineGrabbed:false,left:0,right:0,jumps:[false,false],airborneJump:false,revealTime:0,foodVisible:false,holeVisible:false};}
 export function advanceTutorial(t,level,prev,p,input,events,dt){
   if(t.phase!=='controls')return;

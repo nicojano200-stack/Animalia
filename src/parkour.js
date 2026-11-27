@@ -1,10 +1,10 @@
 // Deterministic stage state. Map geometry is immutable; dynamic data is serializable.
 export function createStage(level){return {time:0,crumble:{},checkpoint:null,debris:[],platforms:level.platforms.map(b=>({...b,dx:0,dy:0})),vines:vinePositions(level,0)};}
-export function vinePositions(level,t){return (level.vines||[]).map((v,i)=>{const a=v.amplitude*Math.sin(t*Math.PI*2/v.period);return {...v,id:i,endX:v.x+Math.sin(a)*v.length,endY:v.y+Math.cos(a)*v.length,angle:a};});}
+export function vinePositions(level,t,previous=[],p=null,dt=0){return (level.vines||[]).map((v,i)=>{const old=previous.find(q=>q.id===i);let a=old?.angle||0,omega=old?.angularVelocity||0;if(p?.vineId===i){a=p.vineAngle;omega=p.vineAngularVelocity;}else{omega+=(-7.8*Math.sin(a)-1.5*omega)*dt;a+=omega*dt;}return {...v,id:i,endX:v.x+Math.sin(a)*v.length,endY:v.y+Math.cos(a)*v.length,angle:a,angularVelocity:omega};});}
 export function stepStage(stage,level,p,c,dt){const time=stage.time+dt;const crumble={...stage.crumble};for(const b of level.platforms){if(b.kind!=='crumble')continue;let age=crumble[b.id];if(age===undefined&&p.onGround&&p.groundId===b.id)age=0;if(age!==undefined){age+=dt;if(age>=c.crumbleDelay+c.crumbleRespawn)delete crumble[b.id];else crumble[b.id]=age;}}
  const platforms=level.platforms.flatMap(b=>{let age=crumble[b.id];if(b.kind==='crumble'&&age>=c.crumbleDelay)return [];let x=b.x,y=b.y;if(b.motion){const phase=t=>Math.sin(t*Math.PI*2/b.motion.period);x+=(b.motion.x||0)*phase(time);y+=(b.motion.y||0)*phase(time);}const prev=stage.platforms.find(q=>q.id===b.id);return [{...b,x,y,dx:prev?x-prev.x:0,dy:prev?y-prev.y:0,bounce:b.kind==='spring'?c.springVelocity:b.bounce,crumbleAge:age}];});// Falling pieces are visual only; the collision face vanishes at the collapse instant.
  const debris=level.platforms.filter(b=>b.kind==='crumble'&&crumble[b.id]>=c.crumbleDelay&&crumble[b.id]-c.crumbleDelay<.75).map(b=>({...b,fallAge:crumble[b.id]-c.crumbleDelay}));
- return {...stage,time,crumble,platforms,debris,vines:vinePositions(level,time)};}
+ return {...stage,time,crumble,platforms,debris,vines:vinePositions(level,time,stage.vines,p,dt)};}
 // Shared round collision predicates; tests use the same rules as the live loop.
 export function acornReached(level,p){const scale=level.playerScale||1;return Math.hypot(p.x-level.acorn.x,p.y-20*scale-level.acorn.y)<42*scale;}
 export function homeReached(level,p){const scale=level.playerScale||1;return p.carrying&&Math.abs(p.x-level.hole.x)<30*scale&&Math.abs(p.y-(level.hole.floor??level.hole.y+46))<40*scale;}

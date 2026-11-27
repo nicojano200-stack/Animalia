@@ -3,9 +3,9 @@ export const emptyInput = () => ({left:false,right:false,jump:false,roll:false,g
 export function createInput(isChatOpen=()=>false) {
   const keys=new Set(), touches=new Set(); let press=false,release=false,oldJump=false;
   let blocked=false;
-  const read=()=>({left:keys.has('ArrowLeft')||keys.has('KeyA')||touches.has('left'),right:keys.has('ArrowRight')||keys.has('KeyD')||touches.has('right'),jump:keys.has('KeyW')||touches.has('jump'),roll:keys.has('ShiftLeft')||keys.has('ShiftRight')||touches.has('roll'),grab:keys.has('KeyE')||touches.has('grab')});
+  const read=()=>({left:keys.has('ArrowLeft')||keys.has('KeyA')||touches.has('left'),right:keys.has('ArrowRight')||keys.has('KeyD')||touches.has('right'),jump:keys.has('KeyW')||touches.has('jump'),roll:keys.has('ShiftLeft')||keys.has('ShiftRight')||touches.has('roll'),grab:false});
   const edge=()=>{let j=read().jump;if(j&&!oldJump){press=true;release=false;}if(!j&&oldJump)release=true;oldJump=j;};
-  const movement=new Set(['ArrowLeft','ArrowRight','KeyA','KeyD','KeyW','ShiftLeft','ShiftRight','KeyE']);
+  const movement=new Set(['ArrowLeft','ArrowRight','KeyA','KeyD','KeyW','ShiftLeft','ShiftRight']);
   window.addEventListener('keydown',e=>{if(blocked||isChatOpen()||e.target instanceof HTMLSelectElement||e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement||e.target instanceof HTMLButtonElement&&e.code==='Space')return;if(!e.repeat&&movement.has(e.code)){e.preventDefault();keys.add(e.code);edge();}});
   window.addEventListener('keyup',e=>{keys.delete(e.code);edge();});
   function clear(){keys.clear();touches.clear();press=release=oldJump=false;document.querySelectorAll('[data-touch]').forEach(b=>b.classList.remove('active'));}

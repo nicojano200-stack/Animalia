@@ -9,11 +9,11 @@ Download or clone this repository and open `index.html` in your browser. For a s
 1. Click Next on the welcome panel.
 2. Walk left for 2 seconds (A), right for 2 seconds (D), and land after jumping at both glowing markers (W). The first marker is on the ground, the second on the block. Walking time counts actual grounded movement, and each marker counts once. Hold W for a higher jump.
 3. After all tasks, the game temporarily locks movement and performs a 5.4-second camera reveal: golden acorn, hamster hole, then back to the player. Both objects are hidden until their reveal.
-4. Collect the golden acorn and carry it to the hamster hole. A completion panel and confetti appear; Click Next to enter Tutorial 02: Meadow Discovery. Grab and release the vine, then try grass, ice, the purple trampoline, chocolate and wood. Finish all six tasks to unlock free practice. Press R to restart the current lesson.
+4. Collect the golden acorn and carry it to the hamster hole. A completion panel and confetti appear; Click Next to enter Tutorial 02: Meadow Discovery. Jump to catch the vine, swing with A/D, and jump off with W, then try grass, ice, the purple trampoline, chocolate and wood. Finish all six tasks to unlock free practice. Press R to restart the current lesson.
 
 ## Controls
 
-A/D or Left/Right: walk. W: jump (Space and Up no longer jump). Shift: roll. Tab: Shaman mode; 1–4 select magic and click to place. 1–0: hamster emotes in Hamster mode. /: chat; Enter sends and Esc cancels. R: restart. Esc: pause. F1: movement lab. F2: debug. Mobile movement and W jump buttons remain available. E is retained for future vine maps. Chat and mode changes are temporarily disabled during the welcome and camera reveal; normal play restores them.
+A/D or Left/Right: walk. W: jump (Space and Up no longer jump). Shift: roll. Tab: Shaman mode; 1–4 select magic and click to place. 1–0: hamster emotes in Hamster mode. /: chat; Enter sends and Esc cancels. R: restart. Esc: pause. F1: movement lab. F2: debug. Mobile movement and W jump buttons remain available. Jump near a vine to catch it automatically; use A/D to swing and press W again to jump off. Chat and mode changes are temporarily disabled during the welcome and camera reveal; normal play restores them.
 
 ## Level and implementation
 
