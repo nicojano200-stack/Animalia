@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://animalia.nicojano200.workers.dev/sitemap.xml
